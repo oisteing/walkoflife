@@ -8,7 +8,6 @@ import altair as alt
 COUNTER_FILE = "counter.txt"
 LOG_FILE = "log.csv"
 
-# Utility: Read current counter
 def read_counter():
     if not os.path.exists(COUNTER_FILE):
         with open(COUNTER_FILE, "w") as f:
@@ -17,12 +16,10 @@ def read_counter():
     with open(COUNTER_FILE, "r") as f:
         return int(f.read().strip())
 
-# Utility: Write counter to file
 def write_counter(value):
     with open(COUNTER_FILE, "w") as f:
         f.write(str(value))
 
-# Utility: Log today's walks
 def log_walks(walks_today, meters_per_walk):
     today = date.today().isoformat()
     existing = {}
@@ -41,7 +38,6 @@ def log_walks(walks_today, meters_per_walk):
         for d, meters in existing.items():
             writer.writerow([d, meters])
 
-# Utility: Reset today's log
 def reset_today():
     today = date.today().isoformat()
     existing = {}
@@ -53,83 +49,99 @@ def reset_today():
                 if row:
                     existing[row[0]] = int(row[1])
 
-    existing[today] = 0  # Reset today to zero
+    existing[today] = 0
 
     with open(LOG_FILE, "w", newline='') as f:
         writer = csv.writer(f)
         for d, meters in existing.items():
             writer.writerow([d, meters])
 
-# Streamlit UI setup
 st.set_page_config(page_title="Walk Tracker", layout="centered")
 
-# --- Reset button at top left ---
-col_reset, col_title = st.columns([1, 4])
-with col_reset:
-    reset_pressed = st.button("🔁 Reset", key="reset")
-
-# --- Title ---
-with col_title:
-    st.markdown("<h1 style='text-align: center;'>🚶‍♂️ Walk Tracker</h1>", unsafe_allow_html=True)
-
-# Handle reset
-if reset_pressed:
-    write_counter(0)
-    reset_today()
-    counter = 0
-else:
-    counter = read_counter()
-
-# --- Slider for meters per walk ---
-meters_per_walk = st.slider("Meters per walk", 0, 100, 10)
-
-# --- CSS styling for buttons ---
+# Custom CSS
 st.markdown("""
     <style>
-    div.stButton > button {
-        height: 90px !important;
-        width: 90px !important;
-        font-size: 36px !important;
-        border-radius: 50% !important;
+    .round-button {
+        height: 100px;
+        width: 100px;
+        font-size: 40px;
+        border-radius: 50%;
         border: none;
         margin: 10px;
+        color: white;
+        cursor: pointer;
     }
-    div[data-testid="column"] button[title="R"] {
-        background-color: #e74c3c !important;
-        color: white !important;
-    }
-    div[data-testid="column"] button[title="Ø"] {
-        background-color: #3498db !important;
-        color: white !important;
-    }
-    div[data-testid="column"] button:has-text("Reset") {
-        background-color: #777 !important;
-        color: white !important;
-        border-radius: 8px !important;
-        font-size: 14px !important;
-        width: 100% !important;
+    .red { background-color: #e74c3c; }
+    .blue { background-color: #3498db; }
+    .reset-button {
+        background-color: #777;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-size: 16px;
+        margin-bottom: 20px;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- Buttons for R and Ø ---
+# --- Reset and title
+col_reset, col_title = st.columns([1, 4])
+with col_reset:
+    if st.button("🔁 Reset", key="reset"):
+        write_counter(0)
+        reset_today()
+        counter = 0
+    else:
+        counter = read_counter()
+with col_title:
+    st.markdown("<h1 style='text-align: center;'>🚶‍♂️ Walk Tracker</h1>", unsafe_allow_html=True)
+
+# --- Slider
+meters_per_walk = st.slider("Meters per walk", 0, 100, 10)
+
+# --- Custom round buttons with HTML
 col1, col2 = st.columns(2)
 clicks = 0
+
 with col1:
-    if st.button("R", key="R", help="Red button"):
+    if st.markdown(
+        '<form action="" method="post"><button name="r_btn" class="round-button red">R</button></form>',
+        unsafe_allow_html=True
+    ):
+        pass
+if st.session_state.get("r_btn"):
+    counter += 1
+    clicks += 1
+    st.session_state["r_btn"] = False  # reset
+
+with col2:
+    if st.markdown(
+        '<form action="" method="post"><button name="ø_btn" class="round-button blue">Ø</button></form>',
+        unsafe_allow_html=True
+    ):
+        pass
+if st.session_state.get("ø_btn"):
+    counter += 1
+    clicks += 1
+    st.session_state["ø_btn"] = False  # reset
+
+# Fallback for standard buttons (Streamlit limitation: workaround HTML can't trigger server-side events directly)
+col1b, col2b = st.columns(2)
+with col1b:
+    if st.button("R", key="R_real"):
         counter += 1
         clicks += 1
-with col2:
-    if st.button("Ø", key="Ø", help="Blue button"):
+with col2b:
+    if st.button("Ø", key="Ø_real"):
         counter += 1
         clicks += 1
 
-# Save updates
 write_counter(counter)
 if clicks > 0:
     log_walks(clicks, meters_per_walk)
 
-# --- Display current status ---
+# --- Totals
 total_meters = counter * meters_per_walk
 st.markdown(f"""
     <div style="text-align: center; margin-top: 30px;">
@@ -138,7 +150,7 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# --- Graph below ---
+# --- Graph
 if os.path.exists(LOG_FILE):
     df = pd.read_csv(LOG_FILE, names=["Date", "Meters"])
     df["Date"] = pd.to_datetime(df["Date"])
