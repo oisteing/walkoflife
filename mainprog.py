@@ -8,7 +8,6 @@ import altair as alt
 COUNTER_FILE = "counter.txt"
 LOG_FILE = "log.csv"
 
-# --- Hjelpefunksjoner ---
 def read_counter():
     if not os.path.exists(COUNTER_FILE):
         with open(COUNTER_FILE, "w") as f:
@@ -51,44 +50,50 @@ def reset_today():
         for d, meters in existing.items():
             writer.writerow([d, meters])
 
-# --- App-start ---
 st.set_page_config(page_title="Walk Tracker", layout="centered")
 
 if "counter" not in st.session_state:
     st.session_state.counter = read_counter()
 
-# --- CSS for stil ---
+# --- Styling via JS og CSS for å gjøre knappene runde og fargede ---
 st.markdown("""
-<style>
-button[data-testid="baseButton"] {
-    height: 100px !important;
-    width: 100px !important;
-    font-size: 36px !important;
-    border-radius: 50% !important;
-    border: none !important;
-    margin: 20px !important;
-    color: white !important;
-}
-div[data-testid="column"]:nth-child(1) button {
-    background-color: #e74c3c !important;
-}
-div[data-testid="column"]:nth-child(2) button {
-    background-color: #3498db !important;
-}
-.reset-btn button {
-    background-color: #777 !important;
-    color: white !important;
-    border-radius: 6px !important;
-    font-size: 14px !important;
-    padding: 8px 12px !important;
-}
-</style>
+    <style>
+    .styled-button {
+        height: 100px !important;
+        width: 100px !important;
+        font-size: 36px !important;
+        border-radius: 50% !important;
+        border: none !important;
+        margin: 10px !important;
+        color: white !important;
+    }
+    </style>
+    <script>
+    const buttons = window.parent.document.querySelectorAll('button');
+    buttons.forEach(btn => {
+        if (btn.innerText === "R") {
+            btn.classList.add("styled-button");
+            btn.style.backgroundColor = "#e74c3c";
+        }
+        if (btn.innerText === "Ø") {
+            btn.classList.add("styled-button");
+            btn.style.backgroundColor = "#3498db";
+        }
+        if (btn.innerText === "🔁 Reset") {
+            btn.style.backgroundColor = "#777";
+            btn.style.color = "white";
+            btn.style.borderRadius = "6px";
+            btn.style.fontSize = "14px";
+            btn.style.padding = "8px 12px";
+        }
+    });
+    </script>
 """, unsafe_allow_html=True)
 
-# --- Topp: Reset og tittel ---
+# --- Reset og tittel ---
 col_reset, col_title = st.columns([1, 4])
 with col_reset:
-    if st.button("🔁 Reset", key="reset"):
+    if st.button("🔁 Reset"):
         st.session_state.counter = 0
         write_counter(0)
         reset_today()
@@ -98,7 +103,7 @@ with col_title:
 # --- Slider ---
 meters_per_walk = st.slider("Meters per walk", 0, 100, 10)
 
-# --- R og Ø-knapper (runde og koblet til teller) ---
+# --- Runde knapper (fungerer og telles) ---
 clicks = 0
 col1, col2 = st.columns(2)
 with col1:
@@ -114,7 +119,7 @@ write_counter(st.session_state.counter)
 if clicks > 0:
     log_walks(clicks, meters_per_walk)
 
-# --- Teller og meter ---
+# --- Teller og total meter ---
 total_meters = st.session_state.counter * meters_per_walk
 st.markdown(f"""
     <div style="text-align: center; margin-top: 30px;">
