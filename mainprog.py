@@ -52,24 +52,31 @@ def reset_today():
 
 st.set_page_config(page_title="Walk Tracker", layout="centered")
 
-# --- Custom CSS ---
+# Custom CSS to make R and Ø buttons round and colored
 st.markdown("""
     <style>
-    div[data-testid="column"] > div > button {
+    /* Style all buttons in columns (R and Ø) */
+    div[data-testid="column"] button {
         height: 100px !important;
         width: 100px !important;
         font-size: 40px !important;
         border-radius: 50% !important;
         border: none !important;
-        margin: 10px;
+        margin: 10px !important;
         color: white !important;
     }
-    div[data-testid="column"] > div:nth-child(1) > button {
-        background-color: #e74c3c !important;  /* R = red */
+
+    /* Style the first button (R) */
+    div[data-testid="column"]:nth-of-type(1) button {
+        background-color: #e74c3c !important;
     }
-    div[data-testid="column"] > div:nth-child(2) > button {
-        background-color: #3498db !important;  /* Ø = blue */
+
+    /* Style the second button (Ø) */
+    div[data-testid="column"]:nth-of-type(2) button {
+        background-color: #3498db !important;
     }
+
+    /* Style reset button separately */
     .reset-button button {
         background-color: #777 !important;
         color: white !important;
@@ -80,32 +87,31 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Reset button in top-left
+# Layout: Reset + title
 col_reset, col_title = st.columns([1, 4])
 with col_reset:
-    with st.container():
-        if st.button("🔁 Reset", key="reset", help="Reset counter and today's log"):
-            write_counter(0)
-            reset_today()
-            counter = 0
-        else:
-            counter = read_counter()
+    if st.button("🔁 Reset", key="reset"):
+        write_counter(0)
+        reset_today()
+        counter = 0
+    else:
+        counter = read_counter()
 
 with col_title:
     st.markdown("<h1 style='text-align: center;'>🚶‍♂️ Walk Tracker</h1>", unsafe_allow_html=True)
 
-# --- Slider
+# Slider
 meters_per_walk = st.slider("Meters per walk", 0, 100, 10)
 
-# --- Buttons R and Ø
+# R and Ø buttons
 col1, col2 = st.columns(2)
 clicks = 0
 with col1:
-    if st.button("R", key="R"):
+    if st.button("R"):
         counter += 1
         clicks += 1
 with col2:
-    if st.button("Ø", key="Ø"):
+    if st.button("Ø"):
         counter += 1
         clicks += 1
 
@@ -113,7 +119,7 @@ write_counter(counter)
 if clicks > 0:
     log_walks(clicks, meters_per_walk)
 
-# --- Display totals
+# Totals
 total_meters = counter * meters_per_walk
 st.markdown(f"""
     <div style="text-align: center; margin-top: 30px;">
@@ -122,7 +128,7 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# --- Graph of daily totals
+# Graph
 if os.path.exists(LOG_FILE):
     df = pd.read_csv(LOG_FILE, names=["Date", "Meters"])
     df["Date"] = pd.to_datetime(df["Date"])
