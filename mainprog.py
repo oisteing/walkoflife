@@ -8,6 +8,7 @@ import altair as alt
 COUNTER_FILE = "counter.txt"
 LOG_FILE = "log.csv"
 
+# --- Hjelpefunksjoner ---
 def read_counter():
     if not os.path.exists(COUNTER_FILE):
         with open(COUNTER_FILE, "w") as f:
@@ -50,80 +51,75 @@ def reset_today():
         for d, meters in existing.items():
             writer.writerow([d, meters])
 
-# -------------------------------
-# INIT
-# -------------------------------
+# --- Oppsett ---
 st.set_page_config(page_title="Walk Tracker", layout="centered")
 
-# Load counter
 if "counter" not in st.session_state:
     st.session_state.counter = read_counter()
 if "clicks" not in st.session_state:
     st.session_state.clicks = 0
 
-# -------------------------------
-# STYLE: CSS som fungerer
-# -------------------------------
+# --- STIL ---
 st.markdown("""
 <style>
-button[kind="secondary"] {
+button.r-button {
+    background-color: #e74c3c !important;
+    color: white !important;
     height: 100px !important;
     width: 100px !important;
-    font-size: 36px !important;
     border-radius: 50% !important;
-    color: white !important;
+    font-size: 36px !important;
     border: none !important;
-    margin: 10px !important;
+    margin: 10px;
 }
-div[data-testid="column"]:nth-of-type(1) button {
-    background-color: #e74c3c !important;  /* R */
+button.o-button {
+    background-color: #3498db !important;
+    color: white !important;
+    height: 100px !important;
+    width: 100px !important;
+    border-radius: 50% !important;
+    font-size: 36px !important;
+    border: none !important;
+    margin: 10px;
 }
-div[data-testid="column"]:nth-of-type(2) button {
-    background-color: #3498db !important;  /* Ø */
-}
-button.reset-btn {
+button.reset-button {
     background-color: #777 !important;
     color: white !important;
     border-radius: 6px !important;
-    font-size: 14px !important;
+    font-size: 16px !important;
     padding: 8px 12px !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# -------------------------------
-# UI: Reset + tittel
-# -------------------------------
+# --- Topp: reset og tittel ---
 col_reset, col_title = st.columns([1, 4])
 with col_reset:
-    if st.button("🔁 Reset", key="reset"):
+    if st.button("🔁 Reset", key="reset", help="Reset counter and today's log"):
         st.session_state.counter = 0
         write_counter(0)
         reset_today()
 with col_title:
     st.markdown("<h1 style='text-align: center;'>🚶‍♂️ Walk Tracker</h1>", unsafe_allow_html=True)
 
-# -------------------------------
-# Slider
-# -------------------------------
+# --- Slider ---
 meters_per_walk = st.slider("Meters per walk", 0, 100, 10)
 
-# -------------------------------
-# Runde knapper for R og Ø
-# -------------------------------
+# --- Runde knapper: R og Ø ---
 col1, col2 = st.columns(2)
 with col1:
-    if st.button("R", key="rbtn"):
-        st.session_state.counter += 1
-        st.session_state.clicks += 1
-with col2:
-    if st.button("Ø", key="obtn"):
+    st.markdown('<button class="r-button" onclick="fetch(\'/R\')">R</button>', unsafe_allow_html=True)
+    if st.button(" ", key="r_real"):
         st.session_state.counter += 1
         st.session_state.clicks += 1
 
-# -------------------------------
-# Lagring og visning
-# -------------------------------
+with col2:
+    st.markdown('<button class="o-button" onclick="fetch(\'/Ø\')">Ø</button>', unsafe_allow_html=True)
+    if st.button(" ", key="o_real"):
+        st.session_state.counter += 1
+        st.session_state.clicks += 1
+
+# --- Lagre og visning ---
 write_counter(st.session_state.counter)
 if st.session_state.clicks > 0:
     log_walks(st.session_state.clicks, meters_per_walk)
@@ -137,9 +133,7 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# -------------------------------
-# Bar graph
-# -------------------------------
+# --- Graf ---
 if os.path.exists(LOG_FILE):
     df = pd.read_csv(LOG_FILE, names=["Date", "Meters"])
     df["Date"] = pd.to_datetime(df["Date"])
