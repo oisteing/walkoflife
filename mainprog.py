@@ -3,6 +3,7 @@ import os
 
 COUNTER_FILE = "counter.txt"
 
+# Functions to handle the counter
 def read_counter():
     if not os.path.exists(COUNTER_FILE):
         with open(COUNTER_FILE, "w") as f:
@@ -15,47 +16,66 @@ def write_counter(value):
     with open(COUNTER_FILE, "w") as f:
         f.write(str(value))
 
-# Initialize counter
+# Read current counter value
 counter = read_counter()
 
+# Page setup
 st.set_page_config(page_title="Walk Tracker", layout="centered")
 
-st.title("🚶‍♂️ Walk Tracker")
+# App title
+st.markdown("<h1 style='text-align: center;'>🚶‍♂️ Walk Tracker</h1>", unsafe_allow_html=True)
 
-# Slider
-meters = st.slider("Meters covered per walk", 0, 100, 10)
+# Slider for meters per walk
+meters_per_walk = st.slider("Meters per walk", 0, 100, 10)
 
-# Layout for buttons
+# Inject custom CSS for button styling
+st.markdown("""
+    <style>
+    div.stButton > button {
+        height: 80px;
+        width: 80px;
+        font-size: 36px;
+        border-radius: 40px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        margin: 10px;
+    }
+    div.stButton > button:hover {
+        background-color: #45a049;
+        transition: 0.2s;
+    }
+    .reset-btn button {
+        background-color: #d9534f !important;
+        border-radius: 12px;
+        width: 100%;
+        font-size: 18px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Button layout
 col1, col2, col3 = st.columns([1, 1, 1.2])
 with col1:
-    if st.button("🅁", key="R", use_container_width=True):
+    if st.button("R", key="R"):
         counter += 1
         write_counter(counter)
 with col2:
-    if st.button("Ø", key="O", use_container_width=True):
+    if st.button("Ø", key="Ø"):
         counter += 1
         write_counter(counter)
 with col3:
-    if st.button("🔁 Reset", key="Reset", use_container_width=True):
-        counter = 0
-        write_counter(counter)
+    with st.container():
+        if st.button("Reset", key="reset"):
+            counter = 0
+            write_counter(counter)
 
-# Show counter
-st.markdown(
-    f"""
-    <div style="font-size:48px; text-align:center; margin-top:20px;">
-        Total Walks: <strong>{counter}</strong>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+# Show counter and total meters
+total_meters = counter * meters_per_walk
 
-# Display meters
-st.markdown(
-    f"""
-    <div style="font-size:24px; text-align:center; margin-top:10px;">
-        Each walk covers: <strong>{meters} meters</strong>
+st.markdown(f"""
+    <div style="text-align: center; margin-top: 30px;">
+        <h2>Walk count: {counter}</h2>
+        <h3>Total meters walked: {total_meters} m</h3>
     </div>
-    """,
-    unsafe_allow_html=True
-)
+""", unsafe_allow_html=True)
