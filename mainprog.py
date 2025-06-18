@@ -8,6 +8,7 @@ import altair as alt
 COUNTER_FILE = "counter.txt"
 LOG_FILE = "log.csv"
 
+# --- Utils ---
 def read_counter():
     if not os.path.exists(COUNTER_FILE):
         with open(COUNTER_FILE, "w") as f:
@@ -50,85 +51,101 @@ def reset_today():
         for d, meters in existing.items():
             writer.writerow([d, meters])
 
+# --- Setup ---
 st.set_page_config(page_title="Walk Tracker", layout="centered")
 
-# Custom CSS to make R and Ø buttons round and colored
+# --- Init state ---
+if "counter" not in st.session_state:
+    st.session_state.counter = read_counter()
+if "last_clicks" not in st.session_state:
+    st.session_state.last_clicks = 0
+
+# --- CSS styling ---
 st.markdown("""
-    <style>
-    /* Style all buttons in columns (R and Ø) */
-    div[data-testid="column"] button {
-        height: 100px !important;
-        width: 100px !important;
-        font-size: 40px !important;
-        border-radius: 50% !important;
-        border: none !important;
-        margin: 10px !important;
-        color: white !important;
-    }
-
-    /* Style the first button (R) */
-    div[data-testid="column"]:nth-of-type(1) button {
-        background-color: #e74c3c !important;
-    }
-
-    /* Style the second button (Ø) */
-    div[data-testid="column"]:nth-of-type(2) button {
-        background-color: #3498db !important;
-    }
-
-    /* Style reset button separately */
-    .reset-button button {
-        background-color: #777 !important;
-        color: white !important;
-        border-radius: 8px !important;
-        font-size: 14px !important;
-        width: 100% !important;
-    }
-    </style>
+<style>
+.round-button {
+    height: 100px;
+    width: 100px;
+    font-size: 40px;
+    border-radius: 50%;
+    border: none;
+    color: white;
+    margin: 10px;
+    cursor: pointer;
+}
+.red {
+    background-color: #e74c3c;
+}
+.blue {
+    background-color: #3498db;
+}
+.reset-button {
+    background-color: #777;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+}
+</style>
 """, unsafe_allow_html=True)
 
-# Layout: Reset + title
+# --- Reset button ---
 col_reset, col_title = st.columns([1, 4])
 with col_reset:
-    if st.button("🔁 Reset", key="reset"):
+    if st.button("🔁 Reset"):
+        st.session_state.counter = 0
         write_counter(0)
         reset_today()
-        counter = 0
-    else:
-        counter = read_counter()
-
 with col_title:
     st.markdown("<h1 style='text-align: center;'>🚶‍♂️ Walk Tracker</h1>", unsafe_allow_html=True)
 
-# Slider
+# --- Slider ---
 meters_per_walk = st.slider("Meters per walk", 0, 100, 10)
 
-# R and Ø buttons
+# --- Custom buttons with HTML ---
 col1, col2 = st.columns(2)
-clicks = 0
 with col1:
-    if st.button("R"):
-        counter += 1
-        clicks += 1
+    if st.button("R", key="Rbtn"):
+        st.session_state.counter += 1
+        st.session_state.last_clicks += 1
 with col2:
-    if st.button("Ø"):
-        counter += 1
-        clicks += 1
+    if st.button("Ø", key="Obtn"):
+        st.session_state.counter += 1
+        st.session_state.last_clicks += 1
 
-write_counter(counter)
-if clicks > 0:
-    log_walks(clicks, meters_per_walk)
+# --- Update and save ---
+write_counter(st.session_state.counter)
+if st.session_state.last_clicks > 0:
+    log_walks(st.session_state.last_clicks, meters_per_walk)
+    st.session_state.last_clicks = 0
 
-# Totals
-total_meters = counter * meters_per_walk
+# --- Display ---
+total_meters = st.session_state.counter * meters_per_walk
 st.markdown(f"""
     <div style="text-align: center; margin-top: 30px;">
-        <h2>Walk count: {counter}</h2>
+        <h2>Walk count: {st.session_state.counter}</h2>
         <h3>Total meters walked: {total_meters} m</h3>
     </div>
 """, unsafe_allow_html=True)
 
-# Graph
+# --- Round button display override ---
+st.markdown("""
+    <script>
+        const buttons = window.parent.document.querySelectorAll('button');
+        buttons.forEach(btn => {
+            if (btn.innerText === "R") {
+                btn.className = "round-button red";
+            }
+            if (btn.innerText === "Ø") {
+                btn.className = "round-button blue";
+            }
+        });
+    </script>
+""", unsafe_allow_html=True)
+
+# --- Graph ---
 if os.path.exists(LOG_FILE):
     df = pd.read_csv(LOG_FILE, names=["Date", "Meters"])
     df["Date"] = pd.to_datetime(df["Date"])
