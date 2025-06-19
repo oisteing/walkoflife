@@ -1,0 +1,41 @@
+# 🐍 Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# 📦 Virtual environments
+venv/
+.env/
+.venv/
+ENV/
+env/
+
+# 📂 OS-spesifikke filer
+.DS_Store
+Thumbs.db
+
+# 📈 Midlertidige og genererte filer
+counter.txt
+log.csv
+
+# 📄 Jupyter og Streamlit midlertidige filer
+.ipynb_checkpoints/
+.streamlit/config.toml
+.streamlit/secrets.toml
+
+# 📦 Installerte pakker (hvis ikke prosjekt bruker `requirements.txt`)
+*.egg-info/
+dist/
+build/
+
+# 🐳 Docker/IDE
+*.log
+.idea/
+.vscode/
+
+# 💾 Backup/temp
+*~
+*.bak
+*.tmp
