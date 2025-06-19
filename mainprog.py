@@ -8,6 +8,7 @@ import altair as alt
 COUNTER_FILE = "counter.txt"
 LOG_FILE = "log.csv"
 
+# --- Funksjoner for filhåndtering ---
 def read_counter():
     if not os.path.exists(COUNTER_FILE):
         with open(COUNTER_FILE, "w") as f:
@@ -50,47 +51,51 @@ def reset_today():
         for d, meters in existing.items():
             writer.writerow([d, meters])
 
+# --- Start konfigurasjon ---
 st.set_page_config(page_title="Walk Tracker", layout="centered")
 
+# --- Initiering av tilstand ---
 if "counter" not in st.session_state:
     st.session_state.counter = read_counter()
+if "clicks" not in st.session_state:
+    st.session_state.clicks = 0
 
-# --- Styling via JS og CSS for å gjøre knappene runde og fargede ---
+# --- Styling: Runde knapper og farger ---
 st.markdown("""
-    <style>
-    .styled-button {
-        height: 100px !important;
-        width: 100px !important;
-        font-size: 36px !important;
-        border-radius: 50% !important;
-        border: none !important;
-        margin: 10px !important;
-        color: white !important;
+<style>
+.styled-button {
+    height: 100px !important;
+    width: 100px !important;
+    font-size: 36px !important;
+    border-radius: 50% !important;
+    border: none !important;
+    margin: 10px !important;
+    color: white !important;
+}
+</style>
+<script>
+const buttons = window.parent.document.querySelectorAll('button');
+buttons.forEach(btn => {
+    if (btn.innerText === "R") {
+        btn.classList.add("styled-button");
+        btn.style.backgroundColor = "#e74c3c";
     }
-    </style>
-    <script>
-    const buttons = window.parent.document.querySelectorAll('button');
-    buttons.forEach(btn => {
-        if (btn.innerText === "R") {
-            btn.classList.add("styled-button");
-            btn.style.backgroundColor = "#e74c3c";
-        }
-        if (btn.innerText === "Ø") {
-            btn.classList.add("styled-button");
-            btn.style.backgroundColor = "#3498db";
-        }
-        if (btn.innerText === "🔁 Reset") {
-            btn.style.backgroundColor = "#777";
-            btn.style.color = "white";
-            btn.style.borderRadius = "6px";
-            btn.style.fontSize = "14px";
-            btn.style.padding = "8px 12px";
-        }
-    });
-    </script>
+    if (btn.innerText === "Ø") {
+        btn.classList.add("styled-button");
+        btn.style.backgroundColor = "#3498db";
+    }
+    if (btn.innerText === "🔁 Reset") {
+        btn.style.backgroundColor = "#777";
+        btn.style.color = "white";
+        btn.style.borderRadius = "6px";
+        btn.style.fontSize = "14px";
+        btn.style.padding = "8px 12px";
+    }
+});
+</script>
 """, unsafe_allow_html=True)
 
-# --- Reset og tittel ---
+# --- Øverste rad: Reset og tittel ---
 col_reset, col_title = st.columns([1, 4])
 with col_reset:
     if st.button("🔁 Reset"):
@@ -100,26 +105,27 @@ with col_reset:
 with col_title:
     st.markdown("<h1 style='text-align: center;'>🚶‍♂️ Walk Tracker</h1>", unsafe_allow_html=True)
 
-# --- Slider ---
+# --- Slider for meter per walk ---
 meters_per_walk = st.slider("Meters per walk", 0, 100, 10)
 
-# --- Runde knapper (fungerer og telles) ---
-clicks = 0
+# --- Knappene: R og Ø ---
 col1, col2 = st.columns(2)
 with col1:
     if st.button("R"):
         st.session_state.counter += 1
-        clicks += 1
+        st.session_state.clicks += 1
 with col2:
     if st.button("Ø"):
         st.session_state.counter += 1
-        clicks += 1
+        st.session_state.clicks += 1
 
+# --- Oppdatering og logging ---
 write_counter(st.session_state.counter)
-if clicks > 0:
-    log_walks(clicks, meters_per_walk)
+if st.session_state.clicks > 0:
+    log_walks(st.session_state.clicks, meters_per_walk)
+    st.session_state.clicks = 0
 
-# --- Teller og total meter ---
+# --- Visning av totalsum ---
 total_meters = st.session_state.counter * meters_per_walk
 st.markdown(f"""
     <div style="text-align: center; margin-top: 30px;">
@@ -128,7 +134,7 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# --- Graf ---
+# --- Graf over loggede meter per dag ---
 if os.path.exists(LOG_FILE):
     df = pd.read_csv(LOG_FILE, names=["Date", "Meters"])
     df["Date"] = pd.to_datetime(df["Date"])
